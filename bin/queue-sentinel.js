@@ -15,7 +15,7 @@ program
   .option("--routing-key <pattern>", "binding routing key pattern", "#")
   .option("--window <seconds>", "how long to listen for dead letters", "30")
   .option("--max-messages <n>", "stop early after collecting this many", "200")
-  .option("--similarity <threshold>", "cosine similarity to group failures together", "0.87")
+  .option("--similarity <threshold>", "cosine similarity to group failures together", "0.9")
   .action(async (opts) => {
     if (!opts.amqpUrl) {
       console.error("Missing --amqp-url (or set AMQP_URL)");
