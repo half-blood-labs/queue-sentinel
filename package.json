@@ -1,0 +1,21 @@
+{
+  "name": "queue-sentinel",
+  "version": "0.1.0",
+  "description": "AI-powered dead-letter queue triage for RabbitMQ. Clusters failed messages and explains why they failed in plain English.",
+  "type": "module",
+  "bin": {
+    "queue-sentinel": "./bin/queue-sentinel.js"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "node bin/queue-sentinel.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "commander": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
