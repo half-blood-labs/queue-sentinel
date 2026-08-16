@@ -13,6 +13,11 @@
   "keywords": ["rabbitmq", "dead-letter-queue", "dlq", "observability", "llm", "triage"],
   "author": "Junaid Farooq (https://ijunaidfarooq.com/)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/half-blood-labs/queue-sentinel.git"
+  },
+  "homepage": "https://github.com/half-blood-labs/queue-sentinel#readme",
   "dependencies": {
     "amqplib": "^0.10.4",
     "commander": "^13.0.0"

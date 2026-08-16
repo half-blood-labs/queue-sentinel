@@ -45,7 +45,7 @@ some orders (a downstream timeout, an invalid payload), so you can see a
 real triage report without touching your own infrastructure.
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/half-blood-labs/queue-sentinel.git
 cd queue-sentinel
 docker compose up -d          # rabbitmq + producer + worker
 ```
