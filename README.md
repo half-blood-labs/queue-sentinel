@@ -110,12 +110,51 @@ node bin/queue-sentinel.js \
 Either way, you need the name of the dead-letter-exchange your queues
 already point at (the `x-dead-letter-exchange` argument on your queue).
 
+## Deploying `--watch` for real
+
+`--amqp-url` and `--exchange` both read from environment variables too
+(`AMQP_URL` and `DLX_EXCHANGE`), so neither deployment example below needs
+any shell-expansion tricks to configure them — set the env vars, always
+pass the same literal `--watch --interval 300`.
+
+**systemd** — [`deploy/systemd/queue-sentinel.service`](deploy/systemd/queue-sentinel.service),
+config in [`deploy/systemd/queue-sentinel.env.example`](deploy/systemd/queue-sentinel.env.example):
+
+```bash
+git clone https://github.com/half-blood-labs/queue-sentinel.git /opt/queue-sentinel
+cd /opt/queue-sentinel && npm install --omit=dev
+cp deploy/systemd/queue-sentinel.env.example /etc/queue-sentinel/queue-sentinel.env
+# edit /etc/queue-sentinel/queue-sentinel.env with your real AMQP_URL / DLX_EXCHANGE
+cp deploy/systemd/queue-sentinel.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now queue-sentinel
+```
+
+**Kubernetes** — [`deploy/kubernetes/`](deploy/kubernetes/) has a ConfigMap,
+a Secret template, and a Deployment:
+
+```bash
+docker build -t your-registry/queue-sentinel:latest .
+docker push your-registry/queue-sentinel:latest
+# edit deploy/kubernetes/configmap.yaml and a copy of secret.example.yaml
+# with your real values, then:
+kubectl apply -f deploy/kubernetes/configmap.yaml
+kubectl apply -f deploy/kubernetes/secret.yaml   # your filled-in copy
+kubectl apply -f deploy/kubernetes/deployment.yaml
+```
+
+Note the Deployment is pinned to `replicas: 1` on purpose — see the comment
+in the manifest. Each replica binds its own tap queue to the DLX, and a
+fanout/topic exchange delivers a copy of every dead letter to every bound
+queue, so more replicas means every failure gets triaged N times over, not
+load-balanced across N workers.
+
 ### CLI options
 
 | Flag | Default | Description |
 |---|---|---|
 | `--amqp-url` | `$AMQP_URL` | RabbitMQ connection URL |
-| `--exchange` | *(required)* | the dead-letter-exchange to tap |
+| `--exchange` | `$DLX_EXCHANGE` | the dead-letter-exchange to tap *(required, one way or another)* |
 | `--routing-key` | `#` | binding pattern (use `""` for a fanout DLX) |
 | `--similarity` | `0.9` | cosine similarity threshold to group failures together |
 | `--watch` | off | run forever, reporting every `--interval` (production mode) |

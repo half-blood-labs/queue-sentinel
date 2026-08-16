@@ -1,0 +1,31 @@
+# Install: copy this file to /etc/systemd/system/queue-sentinel.service,
+# copy queue-sentinel.env.example to /etc/queue-sentinel/queue-sentinel.env
+# and fill it in, then:
+#
+#   git clone https://github.com/half-blood-labs/queue-sentinel.git /opt/queue-sentinel
+#   cd /opt/queue-sentinel && npm install --omit=dev
+#   useradd --system --no-create-home queue-sentinel
+#   systemctl daemon-reload
+#   systemctl enable --now queue-sentinel
+
+[Unit]
+Description=Queue Sentinel - AI triage for RabbitMQ dead-letter queues
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/queue-sentinel
+EnvironmentFile=/etc/queue-sentinel/queue-sentinel.env
+ExecStart=/usr/bin/node bin/queue-sentinel.js --watch --interval 300
+Restart=on-failure
+RestartSec=5
+
+User=queue-sentinel
+Group=queue-sentinel
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

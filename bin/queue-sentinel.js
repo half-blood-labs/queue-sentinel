@@ -11,7 +11,7 @@ program
   .name("queue-sentinel")
   .description("AI-powered dead-letter queue triage for RabbitMQ")
   .requiredOption("--amqp-url <url>", "RabbitMQ connection URL", process.env.AMQP_URL)
-  .requiredOption("--exchange <name>", "dead-letter-exchange to tap")
+  .requiredOption("--exchange <name>", "dead-letter-exchange to tap", process.env.DLX_EXCHANGE)
   .option("--routing-key <pattern>", "binding routing key pattern", "#")
   .option("--similarity <threshold>", "cosine similarity to group failures together", "0.9")
   .option("--window <seconds>", "one-off mode: listen for this long, report once, exit", "30")

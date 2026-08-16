@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: queue-sentinel-config
+data:
+  DLX_EXCHANGE: "your.dlx.name" # EDIT ME: your dead-letter-exchange
+  AI_PROVIDER: "ollama" # or "openai"

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queue-sentinel
+spec:
+  # Exactly one replica, deliberately. Each instance binds its own tap queue
+  # to the dead-letter-exchange, and a fanout/topic exchange delivers a copy
+  # of every dead letter to every bound queue — so N replicas means every
+  # failure gets triaged N times, not load-balanced across N workers.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: queue-sentinel
+  template:
+    metadata:
+      labels:
+        app: queue-sentinel
+    spec:
+      containers:
+        - name: queue-sentinel
+          image: your-registry/queue-sentinel:latest # EDIT ME: build & push the repo's Dockerfile
+          args: ["--watch", "--interval", "300"]
+          envFrom:
+            - configMapRef:
+                name: queue-sentinel-config
+            - secretRef:
+                name: queue-sentinel-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
