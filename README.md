@@ -6,10 +6,11 @@ by one, Queue Sentinel taps your dead-letter-exchange, clusters similar
 failures together with embeddings, and asks an LLM to explain each cluster
 in plain English — a summary, a likely root cause, and a suggested fix.
 
-![Queue Sentinel demo: docker compose up, real orders failing live, then a triage report clustering them into two named failure groups](demo/recording/queue-sentinel-demo.gif)
+![Queue Sentinel demo: docker compose up starts a watcher service that reports automatically, twice, 30 seconds apart, with zero manual re-invocation](demo/recording/queue-sentinel-demo.gif)
 
-*The recording above is real — `docker compose up`, a fake order service actually
-failing in real time, then Queue Sentinel run against it. Nothing staged.*
+*The recording above is real — `docker compose up`, then `docker compose logs -f
+watcher`. Nobody re-runs anything: the watcher keeps tapping the exchange and
+prints a fresh report every 30 seconds on its own, twice in a row here.*
 
 ```
 Queue Sentinel — triage report
@@ -45,49 +46,59 @@ whatever retry tooling reads from it) is completely untouched.
 
 ## Quick start (self-contained demo)
 
-This spins up RabbitMQ plus a fake "orders" service that deliberately fails
-some orders (a downstream timeout, an invalid payload), so you can see a
-real triage report without touching your own infrastructure.
+This spins up RabbitMQ, a fake "orders" service that deliberately fails some
+orders (a downstream timeout, an invalid payload), *and* Queue Sentinel
+itself already running in `--watch` mode — so you see the real production
+shape immediately, not just a one-off command.
 
 ```bash
 git clone https://github.com/half-blood-labs/queue-sentinel.git
 cd queue-sentinel
-docker compose up -d          # rabbitmq + producer + worker
+docker compose up -d
+docker compose logs -f watcher   # a fresh triage report every 30s, automatically
 ```
 
-Give it 15-20 seconds to accumulate some failures, then run Queue Sentinel
-against it. By default this uses a local Ollama (free, no API key):
+No one is re-running anything by hand here — `watcher` is a long-running
+service that keeps tapping the exchange and reports on its own schedule,
+same as it would in production.
+
+RabbitMQ's management UI is at http://localhost:15672 (guest/guest) if you
+want to watch the queues directly. By default the demo uses a local Ollama
+(free, no API key) — set `AI_PROVIDER=openai` in a `.env` file to use OpenAI
+instead (see [Environment variables](#environment-variables)).
+
+If you'd rather run it locally instead of in Docker:
 
 ```bash
 ollama pull llama3.2:3b
 ollama pull nomic-embed-text
-
 npm install
+
 node bin/queue-sentinel.js \
   --amqp-url amqp://guest:guest@localhost:5672 \
   --exchange orders.dlx \
-  --window 20
+  --watch --interval 30
 ```
 
-Or run it fully containerized, no local Node/Ollama install required
-(reaches Ollama on your host via `host.docker.internal`, or set
-`AI_PROVIDER=openai` in a `.env` file to use OpenAI instead):
+## Two ways to run it
+
+**`--watch` (production).** Runs forever, connected once, flushing a report
+every `--interval` seconds. This is the shape a real deployment wants — a
+systemd service, a Kubernetes Deployment, or (as in the demo above) a
+`docker compose` service that just stays up. Nobody re-invokes it; it's
+always watching.
 
 ```bash
-docker compose run --rm queue-sentinel \
-  --amqp-url amqp://guest:guest@rabbitmq:5672 \
-  --exchange orders.dlx \
-  --window 20
+node bin/queue-sentinel.js \
+  --amqp-url amqp://user:pass@your-rabbitmq-host:5672 \
+  --exchange your.dlx.name \
+  --watch --interval 300
 ```
 
-RabbitMQ's management UI is at http://localhost:15672 (guest/guest) if you
-want to watch the queues directly.
-
-## Using it against your own system
-
-You need the name of the dead-letter-exchange your queues already point at
-(the `x-dead-letter-exchange` argument on your queue). Point Queue Sentinel
-at it:
+**`--window` (one-off diagnostic).** Listens for a fixed number of seconds,
+prints one report, exits. Useful when you're already looking at an alert
+and just want a quick answer right now, or for scripting into something
+else (a cron job, a CI check) that manages its own scheduling.
 
 ```bash
 node bin/queue-sentinel.js \
@@ -96,6 +107,9 @@ node bin/queue-sentinel.js \
   --window 60
 ```
 
+Either way, you need the name of the dead-letter-exchange your queues
+already point at (the `x-dead-letter-exchange` argument on your queue).
+
 ### CLI options
 
 | Flag | Default | Description |
@@ -103,9 +117,11 @@ node bin/queue-sentinel.js \
 | `--amqp-url` | `$AMQP_URL` | RabbitMQ connection URL |
 | `--exchange` | *(required)* | the dead-letter-exchange to tap |
 | `--routing-key` | `#` | binding pattern (use `""` for a fanout DLX) |
-| `--window` | `30` | seconds to listen for dead letters |
-| `--max-messages` | `200` | stop early once this many are collected |
 | `--similarity` | `0.9` | cosine similarity threshold to group failures together |
+| `--watch` | off | run forever, reporting every `--interval` (production mode) |
+| `--interval` | `300` | watch mode: seconds between reports |
+| `--window` | `30` | one-off mode: seconds to listen before reporting once |
+| `--max-messages` | `200` | one-off mode: stop early once this many are collected |
 
 ### Environment variables
 

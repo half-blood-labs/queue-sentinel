@@ -28,7 +28,34 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # Not started by `docker compose up`. Run on demand, e.g.:
+  # This is the production shape: starts with everything else and runs
+  # forever, reporting on its own schedule. No one re-invokes it by hand.
+  # Watch it with: docker compose logs -f watcher
+  watcher:
+    build: .
+    entrypoint:
+      [
+        "node",
+        "bin/queue-sentinel.js",
+        "--amqp-url",
+        "amqp://guest:guest@rabbitmq:5672",
+        "--exchange",
+        "orders.dlx",
+        "--watch",
+        "--interval",
+        "30",
+      ]
+    environment:
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # For one-off diagnostic runs instead. Not started by `docker compose up`:
   #   docker compose run --rm queue-sentinel --amqp-url amqp://guest:guest@rabbitmq:5672 --exchange orders.dlx
   queue-sentinel:
     build: .

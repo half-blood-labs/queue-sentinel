@@ -25,22 +25,11 @@ Sleep 3s
 
 Type "until docker compose exec -T rabbitmq rabbitmq-diagnostics ping >/dev/null 2>&1; do sleep 1; done; echo rabbitmq ready"
 Enter
-Sleep 15s
-Sleep 2s
+Sleep 5s
 
 Type "clear"
 Enter
 
-Type "docker compose logs -f worker"
+Type "docker compose logs -f watcher"
 Enter
-Sleep 6s
-Ctrl+C
-Sleep 500ms
-
-Type "clear"
-Enter
-
-Type "node bin/queue-sentinel.js --amqp-url amqp://guest:guest@localhost:5672 --exchange orders.dlx --window 20"
-Enter
-Sleep 25s
-Sleep 3s
+Sleep 65s
