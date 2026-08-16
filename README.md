@@ -6,6 +6,11 @@ by one, Queue Sentinel taps your dead-letter-exchange, clusters similar
 failures together with embeddings, and asks an LLM to explain each cluster
 in plain English — a summary, a likely root cause, and a suggested fix.
 
+![Queue Sentinel demo: docker compose up, real orders failing live, then a triage report clustering them into two named failure groups](demo/recording/queue-sentinel-demo.gif)
+
+*The recording above is real — `docker compose up`, a fake order service actually
+failing in real time, then Queue Sentinel run against it. Nothing staged.*
+
 ```
 Queue Sentinel — triage report
 9 dead-lettered messages, 2 distinct failure group(s)
@@ -100,7 +105,7 @@ node bin/queue-sentinel.js \
 | `--routing-key` | `#` | binding pattern (use `""` for a fanout DLX) |
 | `--window` | `30` | seconds to listen for dead letters |
 | `--max-messages` | `200` | stop early once this many are collected |
-| `--similarity` | `0.87` | cosine similarity threshold to group failures together |
+| `--similarity` | `0.9` | cosine similarity threshold to group failures together |
 
 ### Environment variables
 
