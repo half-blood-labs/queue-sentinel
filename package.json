@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node bin/queue-sentinel.js"
   },
+  "keywords": ["rabbitmq", "dead-letter-queue", "dlq", "observability", "llm", "triage"],
+  "author": "Junaid Farooq (https://ijunaidfarooq.com/)",
   "license": "MIT",
   "dependencies": {
     "amqplib": "^0.10.4",
