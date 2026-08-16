@@ -2,7 +2,7 @@
 import { Command } from "commander";
 import { collectDeadLetters } from "../lib/broker/rabbitmq.js";
 import { embed } from "../lib/ai/index.js";
-import { clusterBySimilarity } from "../lib/cluster.js";
+import { clusterBySimilarity, normalizeForEmbedding } from "../lib/cluster.js";
 import { summarizeCluster, formatReport } from "../lib/report.js";
 
 const program = new Command();
@@ -40,7 +40,16 @@ program
     console.error(`Collected ${messages.length} messages, embedding + clustering...`);
 
     const withEmbeddings = await Promise.all(
-      messages.map(async (m) => ({ ...m, embedding: await embed(describeForEmbedding(m)) })),
+      messages.map(async (m) => ({
+        ...m,
+        embedding: await embed(
+          normalizeForEmbedding({
+            routingKey: m.routingKey,
+            deathReason: m.deaths?.[0]?.reason,
+            content: m.content,
+          }),
+        ),
+      })),
     );
 
     const clusters = clusterBySimilarity(withEmbeddings, Number(opts.similarity));
@@ -51,11 +60,5 @@ program
 
     console.log(formatReport(summaries, { totalMessages: messages.length }));
   });
-
-function describeForEmbedding(item) {
-  const deathReason = item.deaths?.[0]?.reason ?? "unknown";
-  const body = typeof item.content === "string" ? item.content : JSON.stringify(item.content);
-  return `${item.routingKey} ${deathReason} ${body.slice(0, 300)}`;
-}
 
 program.parseAsync();
